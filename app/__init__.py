@@ -1,13 +1,13 @@
 import config
 from flask import Flask
 from flask_migrate import Migrate
-from flask_sqlalchemy import SQLAlchemy
 
+from app.api.users import UsersResource
+from app.extensions import db
 from app.api import api_blueprint
 
 
 app = Flask(__name__)
-db = SQLAlchemy()
 
 app.config.from_object(config)
 
