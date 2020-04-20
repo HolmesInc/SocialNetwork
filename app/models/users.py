@@ -12,20 +12,26 @@ from app.models.__tools import current_time, str_to_standard_datetime
 class User(db.Model, BaseFieldsMixin):
     """User model """
 
-    email = db.Column(db.String(128), nullable=False)
+    email = db.Column(db.String(128), nullable=False, unique=True)
     password = db.Column(db.String(128), nullable=False)
     token = db.Column(db.String(), nullable=True)
     last_login = db.Column(db.TIMESTAMP, nullable=True)
     last_logout = db.Column(db.TIMESTAMP, nullable=True)
     last_request = db.Column(db.TIMESTAMP, nullable=True)
 
-    def __init__(self, email, password, token=None, last_login=None, last_logout=None, last_request=None):
+    def __init__(self, email, password, last_login=None, last_logout=None, last_request=None):
         self.email = email
         self.password = sha512_crypt.hash(password)
-        self.token = token
+        self.token = self.create_auth_token(7, current_app.config['SECRET_KEY'])
         self.last_login = last_login
         self.last_logout = last_logout
         self.last_request = last_request
+
+    @classmethod
+    def create(cls, data: dict):
+        record = cls(**data)
+        db.session.add(record)
+        db.session.commit()
 
     def validate_password(self, password: str) -> bool:
         """ Check that given password is valid for given account
@@ -82,12 +88,12 @@ class User(db.Model, BaseFieldsMixin):
 
         return now >= expire
 
-    def create_auth_token(self, token_expiration_days: int, secret_key: str, algorithm: str) -> tuple:
+    def create_auth_token(self, token_expiration_days: int,
+                          secret_key: str):
         """ Create new access token for user
 
         :param token_expiration_days: how many days token should lives
         :param secret_key: app secret key
-        :param algorithm: token crypto algorithm
         :return: created token, token generation datetime, token expiration datetime
         """
         generated = current_time()
@@ -95,12 +101,10 @@ class User(db.Model, BaseFieldsMixin):
         payload = {
             'expire': str(expire),
             'generated': str(generated),
-            'user_id': str(self.id_record)
+            'user_id': str(self.id)
         }
-        token = jwt.encode(payload=payload, key=secret_key, algorithm=algorithm)
-        token = token.decode('utf-8')
-
-        return token, generated, expire
+        token = jwt.encode(payload=payload, key=secret_key, algorithm='HS256')
+        return token.decode('utf-8')
 
     @staticmethod
     def decode_auth_token(auth_token):

@@ -11,18 +11,14 @@ class UserValidator:
     # Description of expected fields for Swagger documentation
     fields = api.model('User', {
         'email': restplus_fields.String(description='User email', required=True),
-        'id': restplus_fields.String(description='User ID'),
-        'created': restplus_fields.DateTime(description='User creation time'),
-        'updated': restplus_fields.DateTime(description='Record last update'),
+        'password': restplus_fields.String(description='User password', required=True),
     })
 
     class RequestValidator(Schema):
         """ Validates request data for described fields
         """
-        id = marshmallow_fields.String()
         email = marshmallow_fields.Email(required=True)
-        created = marshmallow_fields.DateTime()
-        updated = marshmallow_fields.DateTime()
+        password = marshmallow_fields.String(required=True)
 
     class ModelSerializer(Schema):
         """ Serializes model data.
@@ -35,4 +31,5 @@ class UserValidator:
         class Meta:
             """ Describes exposed model fields
             """
-            fields = ("id", "email", "created", "updated")
+            fields = ("id", "email", "created", "updated", "last_login",
+                      "last_logout", "last_request")
